@@ -26,7 +26,7 @@
         "minimatch": "~0.2.14",
         "vinyl-fs": "~0.1.0",
         "vinyl": "~0.2.3",
-        "aide": "0.0.1"
+        "aide": "https://github.com/SamHowie/aide.git"
     },
     "engines": {
         "node": ">=0.6"
