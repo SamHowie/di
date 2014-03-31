@@ -1,6 +1,6 @@
 // Heavily inspired by Angular 2.0 dependency injection
 
-"use strict";
+'use strict';
 
 var annotations = {};
 

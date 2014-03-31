@@ -1,20 +1,25 @@
 // Heavily inspired by Angular 2.0 dependency injection
 
-"use strict";
+'use strict';
 
-var util = require("./util");
-var annotations = require("./annotations");
-
-var tid = 0;
+var util = require('./util');
+var annotations = require('./annotations');
+var provider = require('./provider');
 
 var Injector = function () {
+    this._providers = this._createProviderStore();
     this._cache = Object.create(null);
-}
+};
 
 Injector.prototype.get = function (token) {
     var tid, instance;
 
-    tid = token.__tid__ || (token.__tid__ = this._nextTokenId());
+    if (util.isClass(token) || util.isFunction()) {
+        tid = token.__tid__ || (token.__tid__ = util.getUID());
+    } else {
+        tid = token;
+    }
+
     instance = this._cache[tid];
 
     if (instance != null) {
@@ -26,30 +31,61 @@ Injector.prototype.get = function (token) {
     return instance;
 };
 
-Injector.prototype.instantiate = function (service) {
-    var self, deps, args, instance;
+Injector.prototype.instantiate = function (token) {
+    var self, deps, args, provider, instance;
 
     self = this;
-    deps = annotations.readAnnotations(service);
 
+    provider = this._getProvider(token);
+    if (provider != null) {
+        token = provider.value;
+    }
+
+    deps = annotations.readAnnotations(token);
     args = deps.map(function (dep) {
         return self.get(dep);
     });
 
-    if (util.isClass(service)) {
-        instance = Object.create(service.prototype);
-        service.apply(instance, args);
-    } else if (util.isFunction(service)) {
-        instance = service.apply({}, args);
-    } else {
-        instance = service;
-    }
+    if (util.isClass(token)) {
+        instance = Object.create(token.prototype);
+        token.apply(instance, args);
+    } else if (util.isFunction(token)) {
+        instance = token.apply(Object.create(null), args);
+    } // Can only instantiate objects through classes and factory methods
 
     return instance;
 };
 
-Injector.prototype._nextTokenId = function () {
-    return tid += 1;
+Injector.prototype.provide = function (token, value) {
+    provider.provide(token, value, this._providers);
+};
+
+Injector.prototype._createProviderStore = function () {
+    var providers, toCopy;
+
+    providers = Object.create(null);
+    toCopy = provider.getProviders();
+    Object.keys(toCopy).forEach(function(tid) {
+        providers[tid] = new provider.Provider(toCopy[tid].token, toCopy[tid].value);
+    });
+
+    return providers;
+};
+
+Injector.prototype._getProvider = function (token) {
+    var tid;
+
+    if (util.isClass(token) || util.isFunction()) {
+        tid = token.__tid__ ;
+    } else {
+        tid = token;
+    }
+
+    if (tid != null) {
+        return this._providers[tid];
+    }
+
+    return undefined;
 };
 
 module.exports = {
