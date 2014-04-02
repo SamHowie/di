@@ -20,6 +20,10 @@ function isFunction(value) {
     return typeof value === 'function';
 }
 
+function isUpperCase (value) {
+    return value === value.toUpperCase();
+}
+
 function getUID() {
     return id += 1;
 }
